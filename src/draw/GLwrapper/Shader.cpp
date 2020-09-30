@@ -31,6 +31,7 @@ void Shader::generateProgram(unsigned int vShader, unsigned int fShader) {
 	if (programValidationStatus == GL_FALSE) {
 		char programInfoLog[1024];
 		glGetProgramInfoLog(program, sizeof programInfoLog, nullptr, programInfoLog);
+		printf("[SHADER PROGRAM ERROR] %s\n", programInfoLog);
 	}
 
 	glDeleteShader(vShader);
@@ -51,7 +52,7 @@ unsigned int Shader::compileShader(std::string src, unsigned int type) {
 	if (status == GL_FALSE) {
 		char message[1024];
 		glGetShaderInfoLog(shader, sizeof message, nullptr, message);
-		printf("[VERTEX SHADER ERROR] %s\n", message);
+		printf("[SHADER ERROR] %s\n", message);
 	}
 
 	return shader;

@@ -15,19 +15,22 @@ Camera* c;
 Geometry* g;
 
 void Draw::init() {
+	glEnable(GL_DEPTH_TEST);
+
 	float data[] = {
 		-1, -1, 0,
 		1, -1, 0,
-		1, 1, 0
+		1, 1, 0,
+		-1, 1, 0
 	};
-	unsigned int nums[] = {
-		0,
-		1,
-		2
+	unsigned int indices[] = {
+		0, 1, 2,
+		2, 3, 0
 	};
-	g = new Geometry({Geometry::fmtVec3f, Geometry::fmtUint}, false, sizeof(data)+sizeof(nums));
-	glBufferSubData(GL_ARRAY_BUFFER, 0,           sizeof(data), data);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(data), sizeof(nums), nums);
+	g = new Geometry();
+	g->indexData(sizeof(indices), indices);
+	g->vertexData(sizeof(data), data);
+	g->vertexLayout(0, 3, GL_FLOAT, sizeof(float) * 3, 0);
 
 	//vData->begin(bool generateIndices)
 	//vData->vertexF(floats)
@@ -41,18 +44,23 @@ void Draw::init() {
 	std::string vSrc =
 		"layout (location = 0) in vec3 inPos;\n"
 		"out vec3 v_pos;\n"
+		"out float v_instanceId;\n"
 		"uniform mat4 MVP;\n"
+		"float scale = 500;\n"
 		"void main(){\n"
+		"v_instanceId = gl_InstanceID;\n"
 		"v_pos = inPos;\n"
-		"gl_Position = MVP*vec4(inPos, 1.0);\n"
+		"vec3 tPos = vec3(inPos.x+scale*sin(gl_InstanceID/100.4), inPos.y+scale*cos(gl_InstanceID/50.3), inPos.z-scale*sin(gl_InstanceID/30.3));\n"
+		"gl_Position = MVP*vec4(tPos, 1.0);\n"
 		"}";
 
 	std::string fSrc =
 		"layout (location = 0) out vec4 outCol;"
 		"in vec3 v_pos;\n"
+		"in float v_instanceId;\n"
 		"void main(){\n"
 		"vec3 tCol = abs(sin(v_pos));\n"
-		"outCol = vec4(v_pos, 1.0);\n"
+		"outCol = vec4(v_pos+0.3+abs(sin(v_instanceId/4.0)), 1.0);\n"
 		"}";
 	
 	s = new Shader(vSrc, fSrc);
@@ -111,11 +119,11 @@ void Draw::update() {
 		c->pan(glm::radians((float)Window::mouseDX), -glm::radians((float)Window::mouseDY));
 
 	glm::mat4 m(1.0f);
-	m *= glm::perspective(glm::radians(45.0f), 16.0f / 9.0f, 0.1f, 1000.0f);
+	m *= glm::perspective(glm::radians(45.0f), 16.0f / 9.0f, 0.1f, 10000.0f);
 	m *= c->getLookatMatrix();
 	m = glm::translate(m, glm::vec3(0.0f, 0.0f, -5.0f));
 	s->uniform("MVP", m);
 
 	g->bind();
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, 100000);
 }

@@ -1,23 +1,21 @@
 #pragma once
 #include <initializer_list>
+#include <glad\glad.h>
 
 class Geometry
 {
 public:
-	enum Format {
-		fmtFloat,
-		fmtVec2f,
-		fmtVec3f,
-		fmtUint
-	};
 	
-	Geometry(std::initializer_list<Format> format, bool dynamicDraw, int dataSize =  sizeof(float) * 9 );
+	Geometry();
 	~Geometry();
+
+	void vertexData(GLsizeiptr dataSize, const void* data, bool dynamicData = false);
+	void indexData(GLsizeiptr dataSize, const void* data, bool dynamicData = false);
+	void vertexLayout(GLuint index, GLint count, GLenum type, GLsizei stride, const void* offset);
 
 	void bind();
 	
 private:
-	unsigned int VBO = 0;
-	unsigned int VAO = 0;
+	GLuint VBO = 0, VAO = 0, IBO = 0;
 };
 
