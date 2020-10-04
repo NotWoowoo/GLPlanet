@@ -13,23 +13,23 @@
 Shader* s;
 Camera* c;
 Geometry* g;
+float spd = 0.1;
+std::vector<float> data;
 
 void Draw::init() {
 	glEnable(GL_DEPTH_TEST);
+	glPointSize(4);
 
-	float data[] = {
-		-1, -1, 0,
-		1, -1, 0,
-		1, 1, 0,
-		-1, 1, 0
-	};
-	unsigned int indices[] = {
-		0, 1, 2,
-		2, 3, 0
-	};
+	for (float v = 0; v < 3.141592f; v+=0.1) {
+		for (float h = 0; h < 2 * 3.141592f; h+=0.1) {
+			data.push_back(cos(h)*sin(v));//x
+			data.push_back(cos(v));//y
+			data.push_back(sin(h)*sin(v));//z
+		}
+	}
+
 	g = new Geometry();
-	g->indexData(sizeof(indices), indices);
-	g->vertexData(sizeof(data), data);
+	g->vertexData(data.size()*sizeof(float), data.data());
 	g->vertexLayout(0, 3, GL_FLOAT, sizeof(float) * 3, 0);
 
 	//vData->begin(bool generateIndices)
@@ -44,23 +44,17 @@ void Draw::init() {
 	std::string vSrc =
 		"layout (location = 0) in vec3 inPos;\n"
 		"out vec3 v_pos;\n"
-		"out float v_instanceId;\n"
 		"uniform mat4 MVP;\n"
-		"float scale = 500;\n"
 		"void main(){\n"
-		"v_instanceId = gl_InstanceID;\n"
 		"v_pos = inPos;\n"
-		"vec3 tPos = vec3(inPos.x+scale*sin(gl_InstanceID/100.4), inPos.y+scale*cos(gl_InstanceID/50.3), inPos.z-scale*sin(gl_InstanceID/30.3));\n"
-		"gl_Position = MVP*vec4(tPos, 1.0);\n"
+		"gl_Position = MVP*vec4(inPos, 1.0);\n"
 		"}";
 
 	std::string fSrc =
 		"layout (location = 0) out vec4 outCol;"
 		"in vec3 v_pos;\n"
-		"in float v_instanceId;\n"
 		"void main(){\n"
-		"vec3 tCol = abs(sin(v_pos));\n"
-		"outCol = vec4(v_pos+0.3+abs(sin(v_instanceId/4.0)), 1.0);\n"
+		"outCol = vec4(abs(v_pos), 1.0);\n"
 		"}";
 	
 	s = new Shader(vSrc, fSrc);
@@ -85,6 +79,12 @@ void Draw::init() {
 			c->setOrientation(0.f, 0.f, 0.f);
 			c->setPosition(0, 0, -10);
 		}
+
+		if (window_key(LSHIFT))
+			spd *= 1.1;
+
+		if (window_key(LCTRL))
+			spd /= 1.1;
 	};
 }
 
@@ -92,22 +92,22 @@ void Draw::update() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (window_key(W))
-		c->moveForward(0.3f);
+		c->moveForward(0.3f*spd);
 
 	if (window_key(S))
-		c->moveForward(-0.3f);
+		c->moveForward(-0.3f * spd);
 
 	if (window_key(D))
-		c->moveRight(0.3f);
+		c->moveRight(0.3f * spd);
 
 	if (window_key(A))
-		c->moveRight(-0.3f);
+		c->moveRight(-0.3f * spd);
 
 	if (window_key(E))
-		c->moveUp(0.3f);
+		c->moveUp(0.3f * spd);
 
 	if (window_key(Q))
-		c->moveUp(-0.3f);
+		c->moveUp(-0.3f * spd);
 
 	if (window_key(R))
 		c->addOrientation(0, 0, 0.01);
@@ -119,11 +119,11 @@ void Draw::update() {
 		c->pan(glm::radians((float)Window::mouseDX), -glm::radians((float)Window::mouseDY));
 
 	glm::mat4 m(1.0f);
-	m *= glm::perspective(glm::radians(45.0f), 16.0f / 9.0f, 0.1f, 10000.0f);
+	m *= glm::perspective(glm::radians(45.0f), 16.0f / 9.0f, 0.01f, 100000.0f);
 	m *= c->getLookatMatrix();
 	m = glm::translate(m, glm::vec3(0.0f, 0.0f, -5.0f));
 	s->uniform("MVP", m);
 
 	g->bind();
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, 100000);
+	glDrawArrays(GL_LINE_LOOP, 0, data.size()/3);
 }

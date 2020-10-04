@@ -83,7 +83,6 @@ void RuntimeStages::init() {
 	}
 
 	SDL_AddEventWatch(eventWatcher, sdlWindow);
-	Window::shouldClose = false;
 
 	sdlGlContext = SDL_GL_CreateContext(sdlWindow);
 	gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress);
@@ -105,7 +104,12 @@ void RuntimeStages::init() {
 }
 
 void RuntimeStages::run() {
+	int lastTime = 0;
 	while (!Window::shouldClose) {
+		Window::time = SDL_GetTicks();
+		Window::dTime = Window::time - lastTime;
+		lastTime = Window::time;
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(sdlWindow);
 		ImGui::NewFrame();

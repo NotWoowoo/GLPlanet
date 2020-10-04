@@ -7,12 +7,15 @@
 namespace Window {
 	inline int WIDTH;
 	inline int HEIGHT;
-	inline bool shouldClose;
+	inline bool shouldClose = false;
 
-	inline int mouseX;
-	inline int mouseY;
-	inline int mouseDX;
-	inline int mouseDY;
+	inline int mouseX = 0;
+	inline int mouseY = 0;
+	inline int mouseDX = 0;
+	inline int mouseDY = 0;
+
+	inline int time = 0;
+	inline int dTime = 0;
 
 	void setRelativeMouseMode(bool enabled);
 	bool isRelativeMouseMode();

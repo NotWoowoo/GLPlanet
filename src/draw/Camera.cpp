@@ -52,7 +52,7 @@ void Camera::pan(float h, float v) {
 
 void Camera::calculateOrientation() {
 	orientation.x = fmod(orientation.x, TAU);
-	orientation.y = fmod(orientation.y, TAU);
+	orientation.y = fmin(PI/2.f, fmax(-PI/2.f, orientation.y));
 	orientation.z = fmod(orientation.z, TAU);
 	
 	forward.x = sin(-orientation.x) * cos(orientation.y);
