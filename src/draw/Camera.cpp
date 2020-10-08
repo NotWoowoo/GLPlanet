@@ -6,9 +6,7 @@
 
 Camera::Camera(glm::vec3 position, glm::quat rotation)
 	: position(position), rotation(rotation) {
-	forward = glm::vec3(0.f);
-	up = glm::vec3(0.f);
-	right = glm::vec3(0.f);
+	calculateOrientationVectors();
 }
 
 void Camera::moveForward(float amt){
@@ -23,6 +21,26 @@ void Camera::moveRight(float amt){
 	position += amt * right;
 }
 
+void Camera::moveTowards(float amt, glm::vec3 target){
+	if(target != position)
+		position += amt * glm::normalize(target - position);
+}
+
+void Camera::applyRotation(glm::quat q){
+	glm::quat temp = rotation;
+	rotation = q;
+	rotation *= temp;
+	calculateOrientationVectors();
+}
+
+void Camera::unapplyRotation(glm::quat q) {
+	glm::quat temp = rotation;
+	rotation = glm::inverse(q);
+	rotation *= temp;
+	calculateOrientationVectors();
+}
+
+
 const glm::vec3& Camera::getForward() { return forward; }
 
 const glm::vec3& Camera::getRight() { return right; }
@@ -36,6 +54,7 @@ void Camera::calculateOrientationVectors() {
 }
 
 const glm::mat4& Camera::getLookatMatrix() {
+	ImGui::Text("pos    (%f,%f,%f)", position.x, position.y, position.z);
 	float rotAng = 2 * acos(rotation.w);
 	float div = sin(rotAng / 2.f);
 	ImGui::Text("rot %f (%f,%f,%f)", glm::degrees(rotAng), rotation.x / div, rotation.y / div, rotation.z / div);
@@ -62,6 +81,26 @@ const glm::mat4& Camera::getLookatMatrix() {
 	return lookatMatrix;
 }
 
-void Camera::lookAt(glm::vec3 position) {
-	rotation = glm::normalize(this->position - position);
+void Camera::lookAt(glm::vec3 target) {
+	//rotation = glm::quat(1.f, 0.f, 0.f, 0.f);
+	glm::vec3 newDirection = glm::normalize(target - position);
+
+	if (glm::dot(newDirection, forward) > 0.999999f)
+		return;
+
+	if (glm::dot(newDirection, forward) < -0.999999f) {
+		applyRotation(glm::angleAxis(glm::radians(180.f), up));
+		return;
+	}
+
+	glm::vec3 rotationAxis = glm::normalize(glm::cross(newDirection, forward));
+	float rotationAngle = acos(glm::dot(newDirection, forward));
+
+	applyRotation(glm::angleAxis(-rotationAngle, rotationAxis));
+
+	/*printf("newDirection (%f, %f, %f)\n\n", newDirection.x, newDirection.y, newDirection.z);
+	printf("rotationAxis (%f, %f, %f)\n", rotationAxis.x, rotationAxis.y, rotationAxis.z);
+	printf("angle        %f\n", glm::degrees(rotationAngle));
+	printf("worked? (%f, %f, %f)\n\n", forward.x, forward.y, forward.z);
+	printf("\n\n----------\n\n");*/
 }

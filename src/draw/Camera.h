@@ -18,6 +18,10 @@ public:
 	void moveForward(float amt);
 	void moveUp(float amt);
 	void moveRight(float amt);
+	void moveTowards(float amt, glm::vec3 target);
+
+	void applyRotation(glm::quat q);
+	void unapplyRotation(glm::quat q);
 
 	const glm::vec3& getForward();
 	const glm::vec3& getRight();
@@ -27,7 +31,7 @@ public:
 
 	const glm::mat4& getLookatMatrix();
 
-	void lookAt(glm::vec3 position);
+	void lookAt(glm::vec3 target);
 
 private:
 	glm::vec3 forward, right, up;

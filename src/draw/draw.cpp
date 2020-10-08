@@ -11,8 +11,26 @@
 #include "window.h"
 
 Shader* s;
-Camera* c;
-float pitch=0, yaw=0;
+
+struct {
+	Camera* c;
+	float pitch = 0, yaw = 0;
+	glm::vec2 planetPos = glm::vec2(0.f);
+	float planetHeading = 0.f;
+	float height = 1.2f;
+
+	void moveForward(float amt) {
+		planetPos.x += amt * sin(planetHeading);
+		planetPos.y += amt * cos(planetHeading);
+	}
+
+	void moveRight(float amt) {
+		planetPos.x += amt * sin(planetHeading + glm::radians(90.f));
+		planetPos.y += amt * cos(planetHeading + glm::radians(90.f));
+	}
+
+} player;
+
 Geometry* g;
 float spd = 0.1;
 std::vector<float> data;
@@ -71,20 +89,20 @@ void Draw::init() {
 		"layout (location = 0) out vec4 outCol;"
 		"in vec3 v_pos;\n"
 		"void main(){\n"
-		"outCol = vec4(abs(v_pos), 1.0);\n"
+		"outCol = vec4(abs(sin(v_pos*100)), 1.0);\n"
 		"}";
 	
 	s = new Shader(vSrc, fSrc);
 	s->use();
 
-	c = new Camera();
+	player.c = new Camera();
 
 	Window::setRelativeMouseMode(true);
 	Window::keyboardCallback = []() {
 		if (window_key(ESCAPE))
 			Window::shouldClose = true;
 
-		if (window_key(X)) {
+		/*if (window_key(X)) {
 			c->position = glm::vec3(0.f, 0.f, -4.1f);
 			yaw = 0;
 			pitch = 0;
@@ -97,6 +115,9 @@ void Draw::init() {
 			pitch = 0;
 			c->rotation = glm::quat(1.f, 0.f, 0.f, 0.f);
 		}
+
+		if (window_key(O))
+			c->lookAt(glm::vec3(0.0f, 0.0f, -5.0f));*/
 
 		if (window_key(LALT))
 			Window::setRelativeMouseMode(!Window::isRelativeMouseMode());
@@ -113,48 +134,68 @@ void Draw::update() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (window_key(W))
-		c->moveForward(0.3f * spd);
+		player.moveForward(0.03f * spd);
 
 	if (window_key(S))
-		c->moveForward(-0.3f * spd);
+		player.moveForward(-0.03f * spd);
 
 	if (window_key(D))
-		c->moveRight(0.3f * spd);
+		player.moveRight(0.03f * spd);
 
 	if (window_key(A))
-		c->moveRight(-0.3f * spd);
+		player.moveRight(-0.03f * spd);
 
-	if (window_key(E))
+	/*if (window_key(E))
 		c->moveUp(0.3f * spd);
 
 	if (window_key(Q))
 		c->moveUp(-0.3f * spd);
 
-	if(window_key(R))
-		c->rotation *= glm::angleAxis(glm::radians(1.f), c->getForward());
+	if (window_key(R)) {
+		c->applyRotation(glm::angleAxis(glm::radians(1.f), c->getForward()));
+	}
 
 	if (window_key(F))
-		c->rotation *= glm::angleAxis(glm::radians(-1.f), c->getForward());
+		c->applyRotation(glm::angleAxis(glm::radians(-1.f), c->getForward()));
+
+	if (window_key(V))
+		c->applyRotation(glm::angleAxis(glm::radians(1.f), c->getUp()));
+
+	if (window_key(B))
+		c->applyRotation(glm::angleAxis(glm::radians(1.f), c->getRight()));*/
 
 	if (Window::isRelativeMouseMode()) {
-		pitch -= Window::mouseDY;
-		yaw -= Window::mouseDX;
+		player.pitch -= Window::mouseDY;
+		player.yaw -= Window::mouseDX;
 		//c->rotation *= glm::angleAxis(glm::radians((float)-Window::mouseDY), c->getRight());
 		//c->rotation *= glm::angleAxis(glm::radians((float)-Window::mouseDX), c->getUp());
 	}
+
+	player.c->position = glm::vec3(
+		player.height * sin(player.planetPos.x),
+		player.height * sin(player.planetPos.y)*cos(player.planetPos.x),
+		player.height * cos(player.planetPos.x)*cos(player.planetPos.y)
+	);
+
+	printf("%f\n", glm::length(player.c->position));
 	
-	glm::vec3 right;
+	/*glm::vec3 right;
 	right.x = cos(glm::radians(yaw));
 	right.y = 0.f;
-	right.z = sin(-glm::radians(yaw));
-	ImGui::Text("right   (%f,%f,%f)", right.x, right.y, right.z);
+	right.z = sin(-glm::radians(yaw));*/
 
-	c->rotation = glm::angleAxis(glm::radians(pitch), right) * glm::angleAxis(glm::radians(yaw), c->worldUp);
+	//if(glm::distance(c->position, glm::vec3(0.0f, 0.0f, -5.0f)) > 1.2f)
+		//c->moveTowards(0.1f, glm::vec3(0.0f, 0.0f, -5.0f));
+	
+	//c->rotation = glm::quat(1.f, 0.f, 0.f, 0.f);
+	//c->unapplyRotation(glm::angleAxis(glm::radians(pitch), right) * glm::angleAxis(glm::radians(yaw), c->worldUp));
+	//player.c->lookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+	//c->applyRotation(glm::angleAxis(glm::radians(pitch), right) * glm::angleAxis(glm::radians(yaw), c->worldUp));
 
 	glm::mat4 m(1.0f);
 	m *= glm::perspective(glm::radians(45.0f), 16.0f / 9.0f, 0.01f, 100000.0f);
-	m *= c->getLookatMatrix();
-	m = glm::translate(m, glm::vec3(0.0f, 0.0f, -5.0f));
+	m *= player.c->getLookatMatrix();
+	//m = glm::translate(m, glm::vec3(0.0f, 0.0f, -5.0f));
 	s->uniform("MVP", m);
 
 	g->bind();
